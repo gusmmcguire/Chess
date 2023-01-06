@@ -9,7 +9,7 @@ namespace Pieces
     public class PieceBehavior : MonoBehaviour
     {
         private Piece _piece;
-        private PiecesManagerClassic _piecesManager;
+        private IPiecesManager _piecesManager;
 
 
         public void Selected()
@@ -37,7 +37,7 @@ namespace Pieces
         private void Start()
         {
             _piece = GetComponent<Piece>();
-            _piecesManager = GetComponentInParent<PiecesManagerClassic>();
+            _piecesManager = GetComponentInParent<IPiecesManager>();
         }
 
         private void OnMouseDown() => Selected();

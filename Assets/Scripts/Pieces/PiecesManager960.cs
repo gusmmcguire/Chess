@@ -12,21 +12,21 @@ namespace Pieces
      */
     public class PiecesManager960 : MonoBehaviour, IPiecesManager
     {
-        
+
         public GameObject pawn;
         public GameObject rook;
         public GameObject knight;
         public GameObject bishop;
         public GameObject king;
         public GameObject queen;
-            
+
         private GameController _gameController;
         private Board.Board _board;
         private TilesController _tilesController;
         private List<GameObject> _pieces = new List<GameObject>();
         private GameObject _target;
         private (List<Vector2Int> movements, List<Vector2Int> enemies) _targetMoves;
-        private readonly List<List<(char, char)>> _alignment = new List<List<(char, char)>>
+        private List<List<(char, char)>> _alignment = new List<List<(char, char)>>
         {
             new List<(char, char)> {('R','W'), ('H','W'), ('B','W'), ('K','W'), ('Q','W'), ('B','W'), ('H','W'), ('R','W')},
             new List<(char, char)> {('P','W'), ('P','W'), ('P','W'), ('P','W'), ('P','W'), ('P','W'), ('P','W'), ('P','W')},
@@ -38,9 +38,88 @@ namespace Pieces
             new List<(char, char)> {('R','B'), ('H','B'), ('B','B'), ('Q','B'), ('K','B'), ('B','B'), ('H','B'), ('R','B')},
         };
 
+        private void SetupAlignment()
+        {
+            //gets the white side back row
+            var whiteRow = RandomizeStart();
+            _alignment[0] = whiteRow;
+            //modifies the white side back row to become the black side back row
+        }
+
+        private List<(char, char)> RandomizeStart()
+        {
+            //one bishop on black, one on white
+            //king between rooks
+            List<(char, char)> startingRowPlacement = new List<(char, char)>();
+            List<char> remainingPieces = new List<char> { 'R', 'R', 'H', 'H', 'B', 'B', 'Q', 'K' };
+            List<char> validPieces = new List<char> { 'R', 'H', 'B', 'Q' };
+            do
+            {
+                int randomIndex = Random.Range(0, validPieces.Count);
+                char randomPiece = validPieces[randomIndex];
+                (char, char) piece = (randomPiece, 'W');
+                startingRowPlacement.Add(piece);
+
+                //handle removing pieces from remaining pieces and invalidating them
+                switch (randomPiece)
+                {
+                    case 'R':
+                        remainingPieces.Remove('R');
+                        if (remainingPieces.Contains('R'))
+                        {
+                            validPieces.Add('K');
+                        }
+                        validPieces.Remove('R');
+                        break;
+                    case 'H':
+                        remainingPieces.Remove('H');
+                        if (!remainingPieces.Contains('H'))
+                        {
+                            validPieces.Remove('H');
+                        }
+                        break;
+                    case 'B':
+                        //revalidation for a second bishop is handled elsewhere
+                        remainingPieces.Remove('B');
+                        validPieces.Remove('B');
+                        break;
+                    case 'Q':
+                        remainingPieces.Remove('Q');
+                        validPieces.Remove('Q');
+                        break;
+                    case 'K':
+                        remainingPieces.Remove('K');
+                        validPieces.Add('R');
+                        validPieces.Remove('K');
+                        break;
+                }
+
+                //validation of bishop if a bishop is already placed
+                if (startingRowPlacement.Contains(('B', 'W')))
+                {
+                    int index = startingRowPlacement.IndexOf(('B', 'W'));
+                    bool indexIsEven = index % 2 == 0;
+                    int upcommingIndexValue = startingRowPlacement.Count;
+                    bool upcommingIndexIsEven = upcommingIndexValue % 2 == 0;
+                    if (indexIsEven != upcommingIndexIsEven)
+                    {
+                        validPieces.Add('B');
+                    }
+                    else
+                    {
+                        validPieces.Remove('B');
+                    }
+                }
+
+
+            } while (remainingPieces.Count > 0);
+
+            return startingRowPlacement;
+        }
+
 
         // Function used while a Piece is selected
-        public void SelectTarget(GameObject target, (List<Vector2Int> movements, List<Vector2Int> enemies) moves )
+        public void SelectTarget(GameObject target, (List<Vector2Int> movements, List<Vector2Int> enemies) moves)
         {
             _target = target;
             _targetMoves = moves;
@@ -52,23 +131,23 @@ namespace Pieces
         public void DropTarget()
         {
             var possTo = _tilesController.GetTileOnMouse();
-            
+
             // If the Piece moves
             if (!possTo.Equals(new Vector2Int(-1, -1)))
             {
                 // If target poss has an enemy
-                if (_targetMoves.enemies.Contains(possTo)) 
+                if (_targetMoves.enemies.Contains(possTo))
                 {
                     _target.SendMessage("Attack");
                     var enemy = GetPieceAt(possTo);
                     KillPiece(enemy.gameObject, possTo);
                 }
-                
+
                 _target.SendMessage("Move", possTo);
                 if (!_target) _gameController.SendMessage("SwitchTurn");
                 else StartCoroutine(SwitchTurn(_target.GetComponent<Piece>()));
             }
-            
+
             HighlightMovements(_targetMoves.movements, false, false);
             HighlightMovements(_targetMoves.enemies, false, true);
             _target = null;
@@ -81,15 +160,16 @@ namespace Pieces
             piece.SendMessage("Died");
             _pieces.RemoveAll(piece.Equals);
         }
-        
+
         // Search for the kings
         public List<GameObject> FindKings()
         {
-            var kings = (from pieceObj in Pieces 
-                select pieceObj.GetComponent<Piece>() into piece 
-                let type = piece.type where type.Equals(Piece.Type.King) 
-                select piece.gameObject).ToList();
-            
+            var kings = (from pieceObj in Pieces
+                         select pieceObj.GetComponent<Piece>() into piece
+                         let type = piece.type
+                         where type.Equals(Piece.Type.King)
+                         select piece.gameObject).ToList();
+
             return kings;
         }
 
@@ -98,10 +178,11 @@ namespace Pieces
         {
             var kings = FindKings();
             GameObject result = null;
-            
-            foreach (var kingObj in from kingObj in kings 
-                let king = kingObj.GetComponent<Piece>() 
-                where king.team.Equals(team) select kingObj)
+
+            foreach (var kingObj in from kingObj in kings
+                                    let king = kingObj.GetComponent<Piece>()
+                                    where king.team.Equals(team)
+                                    select kingObj)
             {
                 result = kingObj;
             }
@@ -113,12 +194,12 @@ namespace Pieces
         public (List<Vector2Int> movements, List<Vector2Int> enemies) AllMovements(Piece.Team team)
         {
             var movements = new List<Vector2Int>();
-            var enemies = new List<Vector2Int>(); 
-            
+            var enemies = new List<Vector2Int>();
+
             foreach (var piece in _pieces.Select(pieceObj => pieceObj.GetComponent<Piece>()).Where(piece => piece.team.Equals(team)))
             {
                 List<Vector2Int> movementsSub, enemiesSub;
-                
+
                 // King and Pawn have different Check patterns
                 if (piece.type.Equals(Piece.Type.King) || piece.type.Equals(Piece.Type.Pawn))
                     (movementsSub, enemiesSub) = piece.MovementsForCheck();
@@ -145,7 +226,7 @@ namespace Pieces
         {
             return _board.GetOccupied();
         }
-        
+
         // Gets al positions that are occupied by pieces of the team
         public List<Vector2Int> GetOccupied(Piece.Team team)
         {
@@ -183,21 +264,22 @@ namespace Pieces
             var piece = Instantiate(queen, poss, queen.transform.rotation);
             piece.transform.SetParent(transform);
             _pieces.Add(piece);
-            
+
             var script = piece.GetComponent<Piece>();
             script.type = Piece.Type.Queen;
             script.poss = boardIndex;
             script.Target1 = poss;
             script.LoadTeamMaterial(team);
-            
+
             _gameController.PawnPromotion(team);
         }
-            
+
         private void Start()
         {
             _gameController = FindObjectOfType<GameController>();
             _board = FindObjectOfType<Board.Board>();
             _tilesController = _board.GetComponentInChildren<TilesController>();
+            SetupAlignment();
             LoadPieces();
         }
 
@@ -211,7 +293,7 @@ namespace Pieces
         private Piece GetPieceAt(Vector2Int poss)
         {
             Piece result = null;
-            
+
             foreach (var pieceObj in _pieces)
             {
                 var piece = pieceObj.GetComponent<Piece>();
@@ -243,9 +325,9 @@ namespace Pieces
                 {
                     var letter = _alignment[i][j].Item1;
                     var color = _alignment[i][j].Item2;
-                    
+
                     #region Decides witch piece to place
-                    
+
                     Piece.Type type;
                     GameObject prefab;
                     switch (letter)
@@ -279,7 +361,7 @@ namespace Pieces
                             type = Piece.Type.None;
                             break;
                     }
-                    
+
                     #endregion
 
                     #region Decides the team
@@ -288,7 +370,7 @@ namespace Pieces
                     if (color.Equals('B')) team = Piece.Team.Black;
 
                     #endregion
-                    
+
                     if (!prefab) continue;
                     StartCoroutine(LoadPiece(i, j, prefab, team, type));
                 }
@@ -310,7 +392,7 @@ namespace Pieces
             script.Spawn(new Vector2Int(i, j));
         }
 
-        
+
         // Properties
 
         public List<GameObject> Pieces
