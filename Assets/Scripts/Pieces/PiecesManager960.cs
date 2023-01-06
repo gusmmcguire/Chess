@@ -10,7 +10,7 @@ namespace Pieces
     /**
      * Class that interacts with the GameController and Board so the Pieces can move
      */
-    public class PiecesManager : MonoBehaviour
+    public class PiecesManager960 : MonoBehaviour, IPiecesManager
     {
         
         public GameObject pawn;

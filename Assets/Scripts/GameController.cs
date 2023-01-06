@@ -24,7 +24,7 @@ public class GameController : MonoBehaviour
                 _cam.SendMessage("Flip", _turn);
                 
                 // Verifies fo Check of Checkmate
-                var kingObj = piecesManager.GetComponent<PiecesManager>().FindKing(_turn);
+                var kingObj = piecesManager.GetComponent<IPiecesManager>().FindKing(_turn);
                 var (check, checkmate) = kingObj.GetComponent<King>().IsCheck();
                 if (checkmate) WinGame(lastTurn);
                 else if (check) uiController.SendMessage("Message", ("CHECK", lastTurn));
@@ -65,7 +65,7 @@ public class GameController : MonoBehaviour
         // Returns if only one king its alive
         private (bool oneKing, GameObject king) KingKilled()
         {
-                var kings = piecesManager.GetComponent<PiecesManager>().FindKings();
+                var kings = piecesManager.GetComponent<IPiecesManager>().FindKings();
                 return (kings.Count == 1, kings.First());
         }
 

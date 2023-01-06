@@ -17,7 +17,7 @@ namespace Pieces
         public Material blackMat;
         public Material whiteMat;
         
-        protected PiecesManager PiecesManager;
+        protected IPiecesManager PiecesManager;
         protected Vector3 Target = Vector3.zero;
         
         private const float Speed = 10f;
@@ -74,7 +74,9 @@ namespace Pieces
         
         protected void Start()
         {
-            PiecesManager = FindObjectOfType<PiecesManager>();
+            var possibleClassicManager = FindObjectOfType<PiecesManagerClassic>();
+            var possible960Manager = FindObjectOfType<PiecesManager960>();
+            PiecesManager = possible960Manager == null ? (IPiecesManager)possibleClassicManager : (IPiecesManager)possible960Manager;
         }
 
         public void Update()

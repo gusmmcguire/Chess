@@ -11,6 +11,11 @@ namespace UI
             SceneManager.LoadScene("Scenes/GameScene");
         }
 
+        public void Play960()
+        {
+            SceneManager.LoadScene("Scenes/960Scene");
+        }
+
         public void Exit()
         {
             Application.Quit();
