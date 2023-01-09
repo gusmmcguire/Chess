@@ -38,7 +38,7 @@ namespace Pieces
             new List<(char, char)> {('R','B'), ('H','B'), ('B','B'), ('Q','B'), ('K','B'), ('B','B'), ('H','B'), ('R','B')},
         };
 
-        private void SetupAlignment()
+        public void SetupAlignment()
         {
             //gets the white side back row
             var whiteRow = RandomizeStart();
@@ -48,86 +48,101 @@ namespace Pieces
             _alignment[_alignment.Count - 1] = blackRow;
         }
 
-        private List<(char, char)> RandomizeStart()
+        public List<(char, char)> RandomizeStart()
         {
-            //one bishop on black, one on white
-            //king between rooks
             List<(char, char)> startingRowPlacement = new List<(char, char)>();
             List<char> remainingPieces = new List<char> { 'R', 'R', 'H', 'H', 'B', 'B', 'Q', 'K' };
             List<char> validPieces = new List<char> { 'R', 'H', 'B', 'Q' };
             do
             {
-                char randomPiece = '?';
-                if (remainingPieces.Count == 2 && validPieces.FindAll(delegate (char c) { return c == 'B'; }).Count == 1)
-                {
-                    randomPiece = 'B';
-                }
-                else
-                {
-                    int randomIndex = Random.Range(0, validPieces.Count);
-                    randomPiece = validPieces[randomIndex];
-                }
+                char randomPiece = RandomizePiece(remainingPieces, validPieces);
                 (char, char) piece = (randomPiece, 'W');
                 startingRowPlacement.Add(piece);
-
-                //handle removing pieces from remaining pieces and invalidating them
-                switch (randomPiece)
-                {
-                    case 'R':
-                        remainingPieces.Remove('R');
-                        if (remainingPieces.Contains('R'))
-                        {
-                            validPieces.Add('K');
-                        }
-                        validPieces.Remove('R');
-                        break;
-                    case 'H':
-                        remainingPieces.Remove('H');
-                        if (!remainingPieces.Contains('H'))
-                        {
-                            validPieces.Remove('H');
-                        }
-                        break;
-                    case 'B':
-                        //revalidation for a second bishop is handled elsewhere
-                        remainingPieces.Remove('B');
-                        validPieces.Remove('B');
-                        break;
-                    case 'Q':
-                        remainingPieces.Remove('Q');
-                        validPieces.Remove('Q');
-                        break;
-                    case 'K':
-                        remainingPieces.Remove('K');
-                        validPieces.Add('R');
-                        validPieces.Remove('K');
-                        break;
-                }
-
-                //validation of bishop if a bishop is already placed
-                if (startingRowPlacement.Contains(('B', 'W')) && remainingPieces.Contains('B'))
-                {
-                    int index = startingRowPlacement.IndexOf(('B', 'W'));
-                    bool indexIsEven = index % 2 == 0;
-                    int upcommingIndexValue = startingRowPlacement.Count;
-                    bool upcommingIndexIsEven = upcommingIndexValue % 2 == 0;
-                    if (indexIsEven != upcommingIndexIsEven)
-                    {
-                        validPieces.Add('B');
-                    }
-                    else
-                    {
-                        validPieces.Remove('B');
-                    }
-                }
-
+                PieceInvalidation(remainingPieces, validPieces, randomPiece);
+                BishopRevalidation(startingRowPlacement, remainingPieces, validPieces);
 
             } while (remainingPieces.Count > 0);
 
             return startingRowPlacement;
         }
 
-        private List<(char, char)> BlackSideFromWhiteSide(List<(char, char)> whiteSide)
+        public static void BishopRevalidation(List<(char, char)> startingRowPlacement, List<char> remainingPieces, List<char> validPieces)
+        {
+            if (startingRowPlacement.Contains(('B', 'W')) && remainingPieces.Contains('B'))
+            {
+                int index = startingRowPlacement.IndexOf(('B', 'W'));
+                bool indexIsEven = index % 2 == 0;
+                int upcommingIndexValue = startingRowPlacement.Count;
+                bool upcommingIndexIsEven = upcommingIndexValue % 2 == 0;
+                if (indexIsEven != upcommingIndexIsEven)
+                {
+                    validPieces.Add('B');
+                }
+                else
+                {
+                    validPieces.Remove('B');
+                }
+            }
+        }
+
+        public static void PieceInvalidation(List<char> remainingPieces, List<char> validPieces, char randomPiece)
+        {
+            //handle removing pieces from remaining pieces and invalidating them
+            switch (randomPiece)
+            {
+                case 'R':
+                    remainingPieces.Remove('R');
+                    if (remainingPieces.Contains('R'))
+                    {
+                        validPieces.Add('K');
+                    }
+                    validPieces.Remove('R');
+                    break;
+                case 'H':
+                    remainingPieces.Remove('H');
+                    if (!remainingPieces.Contains('H'))
+                    {
+                        validPieces.Remove('H');
+                    }
+                    break;
+                case 'B':
+                    //revalidation for a second bishop is handled elsewhere
+                    remainingPieces.Remove('B');
+                    validPieces.Remove('B');
+                    break;
+                case 'Q':
+                    remainingPieces.Remove('Q');
+                    validPieces.Remove('Q');
+                    break;
+                case 'K':
+                    remainingPieces.Remove('K');
+                    validPieces.Add('R');
+                    validPieces.Remove('K');
+                    break;
+            }
+        }
+
+        public static char RandomizePiece(List<char> remainingPieces, List<char> validPieces)
+        {
+            //randomization of piece
+            char randomPiece = '?';
+            //if there are two places left and one of the valid pieces is a bishop, ensure that a bishop is placed regardless of the remaining piece
+            //this is due to an error that may occur if a bishop and rook need to be placed and the final square would be the same color as the first bishop
+            //if the rook gets placed second to last the bishop cannot be placed
+            if (remainingPieces.Count == 2 && validPieces.FindAll(delegate (char c) { return c == 'B'; }).Count == 1)
+            {
+                randomPiece = 'B';
+            }
+            else
+            {
+                int randomIndex = Random.Range(0, validPieces.Count);
+                randomPiece = validPieces[randomIndex];
+            }
+
+            return randomPiece;
+        }
+
+        public List<(char, char)> BlackSideFromWhiteSide(List<(char, char)> whiteSide)
         {
             List<(char, char)> modified = new List<(char, char)>();
 
@@ -138,6 +153,13 @@ namespace Pieces
 
             return modified;
         }
+
+
+
+
+
+
+
 
         // Function used while a Piece is selected
         public void SelectTarget(GameObject target, (List<Vector2Int> movements, List<Vector2Int> enemies) moves)
