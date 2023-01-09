@@ -44,6 +44,8 @@ namespace Pieces
             var whiteRow = RandomizeStart();
             _alignment[0] = whiteRow;
             //modifies the white side back row to become the black side back row
+            var blackRow = BlackSideFromWhiteSide(whiteRow);
+            _alignment[_alignment.Count - 1] = blackRow;
         }
 
         private List<(char, char)> RandomizeStart()
@@ -55,8 +57,16 @@ namespace Pieces
             List<char> validPieces = new List<char> { 'R', 'H', 'B', 'Q' };
             do
             {
-                int randomIndex = Random.Range(0, validPieces.Count);
-                char randomPiece = validPieces[randomIndex];
+                char randomPiece = '?';
+                if (remainingPieces.Count == 2 && validPieces.FindAll(delegate (char c) { return c == 'B'; }).Count == 1)
+                {
+                    randomPiece = 'B';
+                }
+                else
+                {
+                    int randomIndex = Random.Range(0, validPieces.Count);
+                    randomPiece = validPieces[randomIndex];
+                }
                 (char, char) piece = (randomPiece, 'W');
                 startingRowPlacement.Add(piece);
 
@@ -95,7 +105,7 @@ namespace Pieces
                 }
 
                 //validation of bishop if a bishop is already placed
-                if (startingRowPlacement.Contains(('B', 'W')))
+                if (startingRowPlacement.Contains(('B', 'W')) && remainingPieces.Contains('B'))
                 {
                     int index = startingRowPlacement.IndexOf(('B', 'W'));
                     bool indexIsEven = index % 2 == 0;
@@ -117,6 +127,17 @@ namespace Pieces
             return startingRowPlacement;
         }
 
+        private List<(char, char)> BlackSideFromWhiteSide(List<(char, char)> whiteSide)
+        {
+            List<(char, char)> modified = new List<(char, char)>();
+
+            foreach (var piece in whiteSide)
+            {
+                modified.Add((piece.Item1, 'B'));
+            }
+
+            return modified;
+        }
 
         // Function used while a Piece is selected
         public void SelectTarget(GameObject target, (List<Vector2Int> movements, List<Vector2Int> enemies) moves)

@@ -32,7 +32,8 @@ namespace UI
         // Returns to the MainScene
         public void Back()
         {
-            SceneManager.UnloadSceneAsync("Scenes/GameScene");
+            //if(SceneManager.GetActiveScene().name == "GameScene") SceneManager.UnloadSceneAsync("Scenes/GameScene");
+            //else if(SceneManager.GetActiveScene().name == "960Scene") SceneManager.UnloadSceneAsync("Scenes/960Scene");
             SceneManager.LoadScene("Scenes/MainScene");
         }
 

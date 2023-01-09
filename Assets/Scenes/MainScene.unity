@@ -1710,8 +1710,8 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls:
       - m_Target: {fileID: 1622540993}
-        m_TargetAssemblyTypeName: 
-        m_MethodName: Play
+        m_TargetAssemblyTypeName: UI.MainMenu, Assembly-CSharp
+        m_MethodName: Play960
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
